@@ -7,5 +7,7 @@ urlpatterns = [
 
     # 클래스 기반 뷰
     url(r'^$', views.SnippetList.as_view()),
-    url(r'^(?P<pk>[0-9]+)/$', views.SnippetDetail.as_view()),
+    url(r'^(?P<pk>[0-9]+)/$', views.SnippetDetail.as_view(), name='snippet-detail'),
+    url(r'^(?P<pk>[0-9]+)/highlight/$', views.SnippetHighlight.as_view(), name='snippet-highlight'),
+
 ]

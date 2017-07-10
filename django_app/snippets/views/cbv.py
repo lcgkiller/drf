@@ -1,13 +1,13 @@
 from snippets.models import Snippet
 from snippets.permissions import IsOwnerOrReadOnly
-from snippets.serializers import SnippetSerializer  
-from django.http import Http404  
-from rest_framework.views import APIView  
-from rest_framework.response import Response  
-from rest_framework import status, mixins, generics, permissions
+from snippets.serializers import SnippetSerializer
+from django.http import Http404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, mixins, generics, permissions, renderers
 
 __all__ = [
-    'SnippetList', 'SnippetDetail'
+    'SnippetList', 'SnippetDetail', 'SnippetHighlight'
 ]
 
 
@@ -33,6 +33,7 @@ class SnippetDetail1(APIView):
     """
     코드 조각 조회, 업데이트, 삭제
     """
+
     @staticmethod
     def get_object(pk):
         try:
@@ -48,7 +49,7 @@ class SnippetDetail1(APIView):
     def put(self, request, pk, format=None):
         snippet = self.get_object(pk)
         serializer = SnippetSerializer(snippet, data=request.data)
-        if serializer.is_valid(): # valid한 경우에만 save
+        if serializer.is_valid():  # valid한 경우에만 save
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -61,9 +62,8 @@ class SnippetDetail1(APIView):
 
 # minxin은 추가기능, 전반적인 기능을 동작하게 하는 generic이 있어야 함
 class SnippetList2(mixins.ListModelMixin,
-                  mixins.CreateModelMixin,
-                  generics.GenericAPIView):
-
+                   mixins.CreateModelMixin,
+                   generics.GenericAPIView):
     # 미리 쿼리셋과 어떤 시리얼라이저를 쓸건지 정의해야 한다.
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
@@ -77,10 +77,9 @@ class SnippetList2(mixins.ListModelMixin,
 
 
 class SnippetList2(mixins.UpdateModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.DestroyModelMixin,
-                  generics.GenericAPIView):
-
+                   mixins.RetrieveModelMixin,
+                   mixins.DestroyModelMixin,
+                   generics.GenericAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
 
@@ -106,11 +105,20 @@ class SnippetList(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsOwnerOrReadOnly,
-
     )
+
+
+class SnippetHighlight(generics.GenericAPIView):
+    queryset = Snippet.objects.all()
+    renderer_classes = (renderers.StaticHTMLRenderer,)
+
+    def get(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted) # highlighted는 문자열 형식으로 렌더링해서 보내주는 것임.
